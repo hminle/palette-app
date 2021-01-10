@@ -10,7 +10,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QFileDialog, QMainWindow, QLabel
+from PyQt5.QtWidgets import QFileDialog, QMainWindow, QLabel, QScrollArea
 from PyQt5.QtGui import QImage
 from skimage import io, util, transform
 import numpy as np
@@ -48,15 +48,15 @@ class PaletteLabel(ImageLabel):
         self.palette_index = -1
         self.bind_color = None
 
-    def setColor(self, color):
+    def setColor(self, color, size=50):
         self.bind_color = color
         if color.dtype == np.float or color.dtype == np.float32 or color.dtype == np.float64:
-            palette = np.zeros((50, 50, 3), dtype=np.float)
+            palette = np.zeros((size, size, 3), dtype=np.float)
             palette[:,:,0:3] = color
             palette = palette*255
             palette = palette.astype(np.uint8)
         else:
-            palette = np.zeros((50, 50, 3), dtype=np.uint8)
+            palette = np.zeros((size, size, 3), dtype=np.uint8)
             palette[:,:,0:3] = color
         paletteImage = Image.fromarray(palette, 'RGB')
         self.setImage(paletteImage)
@@ -119,15 +119,17 @@ class MainWindow(QMainWindow):
         # self.verticalLayout.addWitget(self.globalColorPalette)
         self.verticalLayout.addLayout(self.globalPalettesLayout)
 
-        self.localColorPalettes = QtWidgets.QLabel(self.centralwidget)
+        self.localColorPalettes = QtWidgets.QWidget(self.centralwidget) #Fix here
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(3)
         sizePolicy.setHeightForWidth(self.localColorPalettes.sizePolicy().hasHeightForWidth())
         self.localColorPalettes.setSizePolicy(sizePolicy)
-        self.localColorPalettes.setText("")
+        # self.localColorPalettes.setText("")
         self.localColorPalettes.setObjectName("localColorPalettes")
-        self.verticalLayout.addWidget(self.localColorPalettes)
+        # self.verticalLayout.addWidget(self.localColorPalettes)
+
+
         self.horizontalLayout.addLayout(self.verticalLayout)
         self.gridLayout_2.addLayout(self.horizontalLayout, 0, 0, 1, 1)
         self.gridLayout = QtWidgets.QGridLayout()
@@ -188,6 +190,22 @@ class MainWindow(QMainWindow):
         self.filename = None
         self.tmp_img = None # For saving image
 
+        self.localPalettesLayout = QtWidgets.QVBoxLayout()
+        self.localPalettesLayout.setObjectName("localPalettesLayout")
+        # self.verticalLayout.addLayout(self.localPalettesLayout)
+        self.localPalettes = []
+
+        self.localColorPalettes.setLayout(self.localPalettesLayout)
+        self.scroll = QScrollArea()
+        self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setWidget(self.localColorPalettes)
+
+        self.verticalLayout.addWidget(self.scroll)
+        self.verticalLayout.
+
+
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("MainWindow", "MainWindow"))
@@ -205,6 +223,8 @@ class MainWindow(QMainWindow):
         self.input_img = Image.open(filename)
         self.input_img_np = np.array(self.input_img)
         self.setPhoto()
+        ## TODO: Test local
+        self.setAllLocalColorPalettes()
 
     def setPhoto(self):
         self.imageLabel.setImage(limit_scale(self.input_img, self.imageLabelWidth, self.imageLabelHeight))
@@ -225,5 +245,36 @@ class MainWindow(QMainWindow):
         for i in range(self.palette_num):
             self.globalPalettes[i].setColor(self.globalColorPalettes[i])
 
+    def setSingleLocalColorPalettes(self):
+        singleLocalColorPalettes = self.__generateLocalColorPalettes()
+        hLayout = QtWidgets.QHBoxLayout()
+        for color in singleLocalColorPalettes:
+            paletteLabel = PaletteLabel()
+            paletteLabel.setAlignment(Qt.AlignCenter)
+            paletteLabel.setColor(color, size=30)
+            self.localPalettes.append(paletteLabel)
+            hLayout.addWidget(paletteLabel)
+        self.localPalettesLayout.addLayout(hLayout)
+    
+    def setAllLocalColorPalettes(self):
+        print('set all local palettes')
+        for i in range(20):
+            self.setSingleLocalColorPalettes()
+
+    def __generateLocalColorPalettes(self):
+        color = np.array((0.37091509, 0.26633987, 0.05326797)).astype(np.float32)
+        return [color, color, color, color, color]
+
     def saveImage(self):
         print("Save image")
+
+
+    def clearLayout(self, layout):
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
+                else:
+                    self.clearLayout(item.layout())

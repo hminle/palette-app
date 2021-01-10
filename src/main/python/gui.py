@@ -17,17 +17,17 @@ import numpy as np
 from utils import limit_scale, generateGlobalPalettes, generateLocalPalettes
 from PIL import Image, ImageQt
 
-import matplotlib
-matplotlib.use('Qt5Agg')
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
+# import matplotlib
+# matplotlib.use('Qt5Agg')
+# from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+# from matplotlib.figure import Figure
 
-class MplCanvas(FigureCanvas):
+# class MplCanvas(FigureCanvas):
 
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
-        fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
-        super(MplCanvas, self).__init__(fig)
+#     def __init__(self, parent=None, width=5, height=4, dpi=100):
+#         fig = Figure(figsize=(width, height), dpi=dpi)
+#         self.axes = fig.add_subplot(111)
+#         super(MplCanvas, self).__init__(fig)
 
 class ImageLabel(QLabel):
     def __init__(self, parent=None, flags=Qt.WindowFlags()):
@@ -64,6 +64,9 @@ class MainWindow(QMainWindow):
 
         self.ctx = ctx 
         self.palette_num = 5
+        self.window_size = 5
+        self.overlap_size = 0
+        self.overlap_size_interval = 100
         self.setupUi()
 
     def setupUi(self):
@@ -128,42 +131,56 @@ class MainWindow(QMainWindow):
 
         self.horizontalLayout.addLayout(self.verticalLayout)
         self.gridLayout_2.addLayout(self.horizontalLayout, 0, 0, 1, 1)
+
         self.gridLayout = QtWidgets.QGridLayout()
         self.gridLayout.setObjectName("gridLayout")
-        self.overlapSizeNumLabel = QtWidgets.QLabel(self.centralwidget)
-        self.overlapSizeNumLabel.setObjectName("overlapSizeNumLabel")
-        self.gridLayout.addWidget(self.overlapSizeNumLabel, 2, 3, 1, 1)
-        self.saveButton = QtWidgets.QPushButton(self.centralwidget)
-        self.saveButton.setObjectName("saveButton")
-        self.gridLayout.addWidget(self.saveButton, 0, 2, 1, 1)
-        self.numPaletteSlider = QtWidgets.QSlider(self.centralwidget)
-        self.numPaletteSlider.setMinimum(0)
-        self.numPaletteSlider.setMaximum(30)
-        self.numPaletteSlider.setSingleStep(2)
-        self.numPaletteSlider.setOrientation(QtCore.Qt.Horizontal)
-        self.numPaletteSlider.setObjectName("numPaletteSlider")
-        self.gridLayout.addWidget(self.numPaletteSlider, 1, 1, 1, 2)
+
         self.openButton = QtWidgets.QPushButton(self.centralwidget)
         self.openButton.setObjectName("openButton")
         self.gridLayout.addWidget(self.openButton, 0, 0, 1, 2)
+
+        self.saveButton = QtWidgets.QPushButton(self.centralwidget)
+        self.saveButton.setObjectName("saveButton")
+        self.gridLayout.addWidget(self.saveButton, 0, 2, 1, 1)
+
         spacerItem = QtWidgets.QSpacerItem(588, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout.addItem(spacerItem, 0, 3, 1, 1)
-        self.paletteNumLabel = QtWidgets.QLabel(self.centralwidget)
-        self.paletteNumLabel.setObjectName("paletteNumLabel")
-        self.gridLayout.addWidget(self.paletteNumLabel, 1, 3, 1, 1)
-        self.numPaletteLabel = QtWidgets.QLabel(self.centralwidget)
-        self.numPaletteLabel.setObjectName("numPaletteLabel")
-        self.gridLayout.addWidget(self.numPaletteLabel, 1, 0, 1, 1)
+        
+        self.windowSizeLabel = QtWidgets.QLabel(self.centralwidget)
+        self.windowSizeLabel.setObjectName("windowSizeLabel")
+        self.gridLayout.addWidget(self.windowSizeLabel, 1, 0, 1, 1)
+
+        self.windowSizeSlider = QtWidgets.QSlider(self.centralwidget)
+        self.windowSizeSlider.setMinimum(1)
+        self.windowSizeSlider.setMaximum(10)
+        self.windowSizeSlider.setSingleStep(1)
+        self.windowSizeSlider.setValue(self.window_size)
+        self.windowSizeSlider.setSliderPosition(self.window_size)
+        self.windowSizeSlider.setOrientation(QtCore.Qt.Horizontal)
+        self.windowSizeSlider.setObjectName("windowSizeSlider")
+        self.gridLayout.addWidget(self.windowSizeSlider, 1, 1, 1, 2)
+
+        self.windowSizeDisplay = QtWidgets.QLabel(self.centralwidget)
+        self.windowSizeDisplay.setObjectName("windowSizeDisplay")
+        self.gridLayout.addWidget(self.windowSizeDisplay, 1, 3, 1, 1)
+
         self.overlapSizeLabel = QtWidgets.QLabel(self.centralwidget)
         self.overlapSizeLabel.setObjectName("overlapSizeLabel")
         self.gridLayout.addWidget(self.overlapSizeLabel, 2, 0, 1, 1)
+
         self.overlapSizeSlider = QtWidgets.QSlider(self.centralwidget)
         self.overlapSizeSlider.setMinimum(0)
         self.overlapSizeSlider.setMaximum(1000)
-        self.overlapSizeSlider.setSingleStep(100)
+        self.overlapSizeSlider.setTickInterval(self.overlap_size_interval)
+        self.overlapSizeSlider.setSingleStep(self.overlap_size_interval)
         self.overlapSizeSlider.setOrientation(QtCore.Qt.Horizontal)
         self.overlapSizeSlider.setObjectName("overlapSizeSlider")
         self.gridLayout.addWidget(self.overlapSizeSlider, 2, 1, 1, 2)
+
+        self.overlapSizeDisplay = QtWidgets.QLabel(self.centralwidget)
+        self.overlapSizeDisplay.setObjectName("overlapSizeDisplay")
+        self.gridLayout.addWidget(self.overlapSizeDisplay, 2, 3, 1, 1)
+
         self.gridLayout_2.addLayout(self.gridLayout, 1, 0, 1, 1)
         self.gridLayout_3.addLayout(self.gridLayout_2, 0, 0, 1, 1)
         self.setCentralWidget(self.centralwidget)
@@ -181,14 +198,16 @@ class MainWindow(QMainWindow):
         # Add code
         self.openButton.clicked.connect(self.loadImage)
         self.saveButton.clicked.connect(self.saveImage)
+        self.windowSizeSlider.valueChanged['int'].connect(self.handleWindowSizeChange)
+        self.overlapSizeSlider.valueChanged['int'].connect(self.handleOverlapSizeChange)
         self.imageLabelWidth = 800
         self.imageLabelHeight = 600
         self.filename = None
-        self.tmp_img = None # For saving image
+        self.input_img = None # For saving image
+        self.input_img_np = None # For saving image in numpy array
 
         self.localPalettesLayout = QtWidgets.QVBoxLayout()
         self.localPalettesLayout.setObjectName("localPalettesLayout")
-        # self.verticalLayout.addLayout(self.localPalettesLayout)
         self.localPalettes = []
 
         self.localColorPalettes.setLayout(self.localPalettesLayout)
@@ -199,18 +218,33 @@ class MainWindow(QMainWindow):
         self.scroll.setWidget(self.localColorPalettes)
 
         self.verticalLayout.addWidget(self.scroll)
-        # self.verticalLayout.
 
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.overlapSizeNumLabel.setText(_translate("MainWindow", "0"))
+        self.overlapSizeDisplay.setText(_translate("MainWindow", "0"))
         self.saveButton.setText(_translate("MainWindow", "Save"))
         self.openButton.setText(_translate("MainWindow", "Open"))
-        self.paletteNumLabel.setText(_translate("MainWindow", "0"))
-        self.numPaletteLabel.setText(_translate("MainWindow", "Num Palettes"))
+        self.windowSizeDisplay.setText(_translate("MainWindow", f"{self.window_size}x{self.window_size}"))
+        self.windowSizeLabel.setText(_translate("MainWindow", "Window Size"))
         self.overlapSizeLabel.setText(_translate("MainWindow", "Overlap Size"))
+    
+    def handleWindowSizeChange(self, value):
+        self.window_size = value
+        self.windowSizeDisplay.setText(f"{value}x{value}")
+        if self.input_img_np is not None:
+            self.clearLayout(self.localPalettesLayout)
+            self.setAllLocalColorPalettes()
+
+    def handleOverlapSizeChange(self, value):
+        real_value = round(value / self.overlap_size_interval)*self.overlap_size_interval
+        self.overlap_size = real_value
+        self.overlapSizeSlider.setTickPosition(real_value)
+        self.overlapSizeDisplay.setText(str(real_value))
+        if self.input_img_np is not None:
+            self.clearLayout(self.localPalettesLayout)
+            self.setAllLocalColorPalettes()
 
     def loadImage(self):
         print("Load image")
@@ -220,7 +254,6 @@ class MainWindow(QMainWindow):
         self.input_img_np = np.array(self.input_img)
         self.setPhoto()
         self.setGlobalPalettes()
-        ## TODO: Test local
         self.clearLayout(self.localPalettesLayout)
         self.setAllLocalColorPalettes()
 
@@ -245,9 +278,9 @@ class MainWindow(QMainWindow):
     def setAllLocalColorPalettes(self):
         print('set all local palettes')
         input_img = self.input_img_np
-        overlap_size = 100
-        num_col_slides = 5
-        num_row_slides = 5
+        overlap_size = self.overlap_size
+        num_col_slides = self.window_size
+        num_row_slides = self.window_size
         total_slides = num_col_slides*num_row_slides
         row_step = math.floor((input_img.shape[0])/num_col_slides)
         col_step = math.floor((input_img.shape[1])/num_row_slides)

@@ -146,23 +146,23 @@ class MainWindow(QMainWindow):
         spacerItem = QtWidgets.QSpacerItem(588, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout.addItem(spacerItem, 0, 3, 1, 1)
         
-        self.windowSizeLabel = QtWidgets.QLabel(self.centralwidget)
-        self.windowSizeLabel.setObjectName("windowSizeLabel")
-        self.gridLayout.addWidget(self.windowSizeLabel, 1, 0, 1, 1)
+        self.numWindowLabel = QtWidgets.QLabel(self.centralwidget)
+        self.numWindowLabel.setObjectName("numWindowLabel")
+        self.gridLayout.addWidget(self.numWindowLabel, 1, 0, 1, 1)
 
-        self.windowSizeSlider = QtWidgets.QSlider(self.centralwidget)
-        self.windowSizeSlider.setMinimum(1)
-        self.windowSizeSlider.setMaximum(10)
-        self.windowSizeSlider.setSingleStep(1)
-        self.windowSizeSlider.setValue(self.window_size)
-        self.windowSizeSlider.setSliderPosition(self.window_size)
-        self.windowSizeSlider.setOrientation(QtCore.Qt.Horizontal)
-        self.windowSizeSlider.setObjectName("windowSizeSlider")
-        self.gridLayout.addWidget(self.windowSizeSlider, 1, 1, 1, 2)
+        self.numWindowSlider = QtWidgets.QSlider(self.centralwidget)
+        self.numWindowSlider.setMinimum(1)
+        self.numWindowSlider.setMaximum(10)
+        self.numWindowSlider.setSingleStep(1)
+        self.numWindowSlider.setValue(self.window_size)
+        self.numWindowSlider.setSliderPosition(self.window_size)
+        self.numWindowSlider.setOrientation(QtCore.Qt.Horizontal)
+        self.numWindowSlider.setObjectName("numWindowSlider")
+        self.gridLayout.addWidget(self.numWindowSlider, 1, 1, 1, 2)
 
-        self.windowSizeDisplay = QtWidgets.QLabel(self.centralwidget)
-        self.windowSizeDisplay.setObjectName("windowSizeDisplay")
-        self.gridLayout.addWidget(self.windowSizeDisplay, 1, 3, 1, 1)
+        self.numWindowDisplay = QtWidgets.QLabel(self.centralwidget)
+        self.numWindowDisplay.setObjectName("numWindowDisplay")
+        self.gridLayout.addWidget(self.numWindowDisplay, 1, 3, 1, 1)
 
         self.overlapSizeLabel = QtWidgets.QLabel(self.centralwidget)
         self.overlapSizeLabel.setObjectName("overlapSizeLabel")
@@ -198,7 +198,7 @@ class MainWindow(QMainWindow):
         # Add code
         self.openButton.clicked.connect(self.loadImage)
         self.saveButton.clicked.connect(self.saveImage)
-        self.windowSizeSlider.valueChanged['int'].connect(self.handleWindowSizeChange)
+        self.numWindowSlider.valueChanged['int'].connect(self.handleNumWindowChange)
         self.overlapSizeSlider.valueChanged['int'].connect(self.handleOverlapSizeChange)
         self.imageLabelWidth = 800
         self.imageLabelHeight = 600
@@ -226,13 +226,13 @@ class MainWindow(QMainWindow):
         self.overlapSizeDisplay.setText(_translate("MainWindow", "0"))
         self.saveButton.setText(_translate("MainWindow", "Save"))
         self.openButton.setText(_translate("MainWindow", "Open"))
-        self.windowSizeDisplay.setText(_translate("MainWindow", f"{self.window_size}x{self.window_size}"))
-        self.windowSizeLabel.setText(_translate("MainWindow", "Window Size"))
+        self.numWindowDisplay.setText(_translate("MainWindow", f"{self.window_size}x{self.window_size}"))
+        self.numWindowLabel.setText(_translate("MainWindow", "Num Window"))
         self.overlapSizeLabel.setText(_translate("MainWindow", "Overlap Size"))
     
-    def handleWindowSizeChange(self, value):
+    def handleNumWindowChange(self, value):
         self.window_size = value
-        self.windowSizeDisplay.setText(f"{value}x{value}")
+        self.numWindowDisplay.setText(f"{value}x{value}")
         if self.input_img_np is not None:
             self.clearLayout(self.localPalettesLayout)
             self.setAllLocalColorPalettes()

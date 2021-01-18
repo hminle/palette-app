@@ -12,7 +12,7 @@ from fbs_runtime.application_context.PyQt5 import ApplicationContext
 from typing import List, Optional
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QFileDialog, QMainWindow, QLabel, QScrollArea
+from PyQt5.QtWidgets import QFileDialog, QMainWindow, QLabel, QScrollArea, QPushButton
 from PyQt5.QtGui import QImage
 from skimage import io, util, transform
 import numpy as np
@@ -86,9 +86,8 @@ class MainWindow(QMainWindow):
 
         self.globalPalettes: List[PaletteLabel] = []
         for i in range(self.palette_num):
-            self.globalPalettes.append(PaletteLabel(self))
+            self.globalPalettes.append(PaletteLabel(self, palette_index=i))
             self.globalPalettes[-1].setAlignment(Qt.AlignCenter)
-            self.globalPalettes[-1].palette_index = i
             #self.globalPalettes[-1].setColor(np.array((0, 0, 0)).astype(np.float32))
         self.globalPalettesLayout = QtWidgets.QHBoxLayout()
         for label in self.globalPalettes:
@@ -118,9 +117,9 @@ class MainWindow(QMainWindow):
         self.openButton.setObjectName("openButton")
         self.gridLayout.addWidget(self.openButton, 0, 0, 1, 2)
 
-        self.saveButton = QtWidgets.QPushButton(self.centralwidget)
-        self.saveButton.setObjectName("saveButton")
-        self.gridLayout.addWidget(self.saveButton, 0, 2, 1, 1)
+        self.resetButton = QtWidgets.QPushButton(self.centralwidget)
+        self.resetButton.setObjectName("resetButton")
+        self.gridLayout.addWidget(self.resetButton, 0, 2, 1, 1)
 
         spacerItem = QtWidgets.QSpacerItem(588, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout.addItem(spacerItem, 0, 3, 1, 1)
@@ -177,7 +176,7 @@ class MainWindow(QMainWindow):
         # Add code
         self.palette_controller = None
         self.openButton.clicked.connect(self.handleOpenButtonClicked)
-        self.saveButton.clicked.connect(self.saveImage)
+        self.resetButton.clicked.connect(self.handleResetButtonClicked)
         self.numWindowSlider.valueChanged['int'].connect(self.handleNumWindowChange)
         self.overlapSizeSlider.valueChanged['int'].connect(self.handleOverlapSizeChange)
         self.imageLabelWidth: int = 800
@@ -199,9 +198,9 @@ class MainWindow(QMainWindow):
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
-        self.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.setWindowTitle(_translate("MainWindow", "Palette App"))
         self.overlapSizeDisplay.setText(_translate("MainWindow", "0"))
-        self.saveButton.setText(_translate("MainWindow", "Save"))
+        self.resetButton.setText(_translate("MainWindow", "Reset"))
         self.openButton.setText(_translate("MainWindow", "Open"))
         self.numWindowDisplay.setText(_translate("MainWindow", f"{self.window_size}x{self.window_size}"))
         self.numWindowLabel.setText(_translate("MainWindow", "Num Window"))
@@ -234,8 +233,15 @@ class MainWindow(QMainWindow):
         input_image = self.palette_controller.get_current_image()
         self.setPhoto(input_image)
 
-        # self.clearLayout(self.localPalettesLayout)
+        self.clearLayout(self.localPalettesLayout)
+        local_color_palettes = self.palette_controller.generate_local_palettes(self.overlap_size, 
+                                                                               self.window_size)
+        self.__setLocalColorPalettes(local_color_palettes)
         # self.setAllLocalColorPalettes()
+
+    def handleResetButtonClicked(self):
+        original_image = self.palette_controller.get_original_image()
+        self.setPhoto(original_image)
 
     def handlePaletteLabelClicked(self, chosen_color_Lab, is_global, palette_index):
         if is_global:
@@ -251,37 +257,19 @@ class MainWindow(QMainWindow):
         for i in range(len(global_palette_Lab)):
             self.globalPalettes[i].setColor(global_palette_Lab[i], 
                                             size=GLOBAL_COLOR_PALETTE_SIZE)
-
-    # def setSingleLocalColorPalettes(self, singleLocalColorPalettes: np.array):
-    #     hLayout = QtWidgets.QHBoxLayout()
-    #     for color in singleLocalColorPalettes:
-    #         paletteLabel = PaletteLabel()
-    #         paletteLabel.setAlignment(Qt.AlignCenter)
-    #         paletteLabel.setColor(color, size=30)
-    #         self.localPalettes.append(paletteLabel)
-    #         hLayout.addWidget(paletteLabel)
-    #     self.localPalettesLayout.addLayout(hLayout)
     
-    def setAllLocalColorPalettes(self):
-        print('set all local palettes')
-        input_img = self.input_img_np
-        overlap_size = self.overlap_size
-        num_col_slides = self.window_size
-        num_row_slides = self.window_size
-        total_slides = num_col_slides*num_row_slides
-        row_step = math.floor((input_img.shape[0])/num_col_slides)
-        col_step = math.floor((input_img.shape[1])/num_row_slides)
-        localPalettesList = generateLocalPalettes(input_img, 
-                                                  row_step, 
-                                                  col_step, 
-                                                  overlap_size, 
-                                                  total_slides)
-        for i in range(len(localPalettesList)):
-            self.setSingleLocalColorPalettes(localPalettesList[i])
-
-    def saveImage(self):
-        print("Save image")
-
+    def __setLocalColorPalettes(self, local_color_palettes):
+        count_palette_index = 0
+        for i in range(len(local_color_palettes)):
+            count_palette_index += 1
+            hLayout = QtWidgets.QHBoxLayout()
+            for color in local_color_palettes[i]:
+                paletteLabel = PaletteLabel(self, is_global=False, palette_index=count_palette_index)
+                paletteLabel.setAlignment(Qt.AlignCenter)
+                paletteLabel.setColor(color, size=30)
+                self.localPalettes.append(paletteLabel)
+                hLayout.addWidget(paletteLabel)
+            self.localPalettesLayout.addLayout(hLayout)
 
     def clearLayout(self, layout):
         if layout is not None:

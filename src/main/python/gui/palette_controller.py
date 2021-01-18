@@ -23,6 +23,9 @@ class PaletteController:
     def get_current_image(self):
         return self.image_model.get_current_image()
 
+    def get_original_image(self):
+        return self.image_model.get_original_image()
+
     def generate_global_palettes(self):
         input_image = self.image_model.get_current_image()
         input_image_Lab = rgb2lab(input_image)
@@ -35,12 +38,13 @@ class PaletteController:
         local_color_palettes = []
         num_col_slides = window_size
         num_row_slides = window_size
-        total_slides = num_col_slides*num_row_slides
-        row_step = math.floor((input_image.shape[0])/num_col_slides)
-        col_step = math.floor((input_image.shape[1])/num_row_slides)
-        count = 0
         height = input_image.height
         width = input_image.width
+        total_slides = num_col_slides*num_row_slides
+        row_step = math.floor((height)/num_col_slides)
+        col_step = math.floor((width)/num_row_slides)
+        count = 0
+
         for i in range(0, height, row_step):
             if i + row_step > height:
                 continue
@@ -59,10 +63,10 @@ class PaletteController:
 
                             #build palette
                             sample_palette_Lab = build_palette(sample_Lab)
-                            # sample_palette_image = draw_palette(palette)
-                            # TODO: Convert sample_palette_lab to rgb
+                            local_color_palettes.append(sample_palette_Lab)
                         else: 
                             break
+        return local_color_palettes
 
     def handleGlobalPaletteChanged(self, chosen_color_Lab, palette_index):
         source_palette = copy.deepcopy(self.global_palette_model.get_current_palette())

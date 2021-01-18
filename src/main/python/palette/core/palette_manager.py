@@ -1,6 +1,9 @@
+import 
+import numpy as np
 from hist_3d import Hist3D
 from palette_selection import PaletteSelection
 from global_palette import GlobalPalette
+from palette.cv.image import rgb2Lab
 
 ## Implementation of PaletteManager
 class PaletteManager:
@@ -10,7 +13,7 @@ class PaletteManager:
     #  @param alpha          low density clip.
     #  @param color_space    target color space. 'rgb' or 'Lab' or 'hsv'.
 
-    def __init__(self, image,
+    def __init__(self, image: Optional[numpy.array],
                  num_bins=16, alpha=0.1, color_space='Lab', palette_num=5):
         self.input_img = image
         self.color_space = color_space

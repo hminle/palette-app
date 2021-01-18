@@ -18,6 +18,9 @@ from skimage import io, util, transform
 import numpy as np
 from utils import limit_scale, generateGlobalPalettes, generateLocalPalettes
 from PIL import Image, ImageQt
+from gui.palette_label import PaletteLabel
+from gui.palette_controller import PaletteController
+from gui.image_label import ImageLabel
 
 # import matplotlib
 # matplotlib.use('Qt5Agg')
@@ -31,34 +34,8 @@ from PIL import Image, ImageQt
 #         self.axes = fig.add_subplot(111)
 #         super(MplCanvas, self).__init__(fig)
 
-class ImageLabel(QLabel):
-    def __init__(self, parent=None, flags=Qt.WindowFlags()):
-        super(ImageLabel, self).__init__(parent, flags)
-        self.bind_image = None
-
-    def setImage(self, image: np.array):
-        self.bind_image = ImageQt.ImageQt(image)
-        self.setPixmap(QtGui.QPixmap.fromImage(self.bind_image))
-
-class PaletteLabel(ImageLabel):
-    def __init__(self, parent=None, flags=Qt.WindowFlags()) -> None:
-        super(PaletteLabel, self).__init__(parent, flags)
-        self.palette_index = -1
-        self.bind_color = None
-
-    def setColor(self, color: Optional[np.float], size: int=50) -> None:
-        self.bind_color = color
-        if color.dtype == np.float or color.dtype == np.float32 or color.dtype == np.float64:
-            palette = np.zeros((size, size, 3), dtype=np.float)
-            palette[:,:,0:3] = color
-            palette = palette*255
-            palette = palette.astype(np.uint8)
-        else:
-            palette = np.zeros((size, size, 3), dtype=np.uint8)
-            palette[:,:,0:3] = color
-        paletteImage = Image.fromarray(palette, 'RGB')
-        self.setImage(paletteImage)
-        self.repaint()
+GLOBAL_COLOR_PALETTE_SIZE = 60
+LOCAL_COLOR_PALETTE_SIZE = 20
 
 class MainWindow(QMainWindow):
     def __init__(self, ctx):
@@ -109,7 +86,7 @@ class MainWindow(QMainWindow):
 
         self.globalPalettes: List[PaletteLabel] = []
         for i in range(self.palette_num):
-            self.globalPalettes.append(PaletteLabel())
+            self.globalPalettes.append(PaletteLabel(self))
             self.globalPalettes[-1].setAlignment(Qt.AlignCenter)
             self.globalPalettes[-1].palette_index = i
             #self.globalPalettes[-1].setColor(np.array((0, 0, 0)).astype(np.float32))
@@ -198,15 +175,13 @@ class MainWindow(QMainWindow):
         QtCore.QMetaObject.connectSlotsByName(self)
 
         # Add code
-        self.openButton.clicked.connect(self.loadImage)
+        self.palette_controller = None
+        self.openButton.clicked.connect(self.handleOpenButtonClicked)
         self.saveButton.clicked.connect(self.saveImage)
         self.numWindowSlider.valueChanged['int'].connect(self.handleNumWindowChange)
         self.overlapSizeSlider.valueChanged['int'].connect(self.handleOverlapSizeChange)
         self.imageLabelWidth: int = 800
         self.imageLabelHeight: int = 600
-        self.filename: Optional[str] = None
-        self.input_img: Optional[Image] = None # For saving image
-        self.input_img_np: Optional[np.array] = None # For saving image in numpy array
 
         self.localPalettesLayout = QtWidgets.QVBoxLayout()
         self.localPalettesLayout.setObjectName("localPalettesLayout")
@@ -235,47 +210,57 @@ class MainWindow(QMainWindow):
     def handleNumWindowChange(self, value: int):
         self.window_size = value
         self.numWindowDisplay.setText(f"{value}x{value}")
-        if self.input_img_np is not None:
-            self.clearLayout(self.localPalettesLayout)
-            self.setAllLocalColorPalettes()
+        # if self.palette_controller is not None:
+        #     self.clearLayout(self.localPalettesLayout)
+        #     self.setAllLocalColorPalettes()
 
     def handleOverlapSizeChange(self, value: int):
         real_value = round(value / self.overlap_size_interval)*self.overlap_size_interval
         self.overlap_size = real_value
         self.overlapSizeSlider.setTickPosition(real_value)
         self.overlapSizeDisplay.setText(str(real_value))
-        if self.input_img_np is not None:
+        if self.palette_controller is not None:
             self.clearLayout(self.localPalettesLayout)
-            self.setAllLocalColorPalettes()
+            # self.setAllLocalColorPalettes()
 
-    def loadImage(self):
-        print("Load image")
-        filename = QFileDialog.getOpenFileName()[0]
-        print(filename)
-        self.input_img = Image.open(filename)
-        self.input_img_np = np.array(self.input_img)
-        self.setPhoto()
-        self.setGlobalPalettes()
-        self.clearLayout(self.localPalettesLayout)
-        self.setAllLocalColorPalettes()
+    def handleOpenButtonClicked(self):
+        input_path = QFileDialog.getOpenFileName()[0]
+        print(input_path)
+        if self.palette_controller is None:
+            self.palette_controller = PaletteController(self)
+        self.palette_controller.load_image(input_path)
+        global_palette_Lab = self.palette_controller.generate_global_palettes()
+        self.__setGlobalPalettes(global_palette_Lab)
+        input_image = self.palette_controller.get_current_image()
+        self.setPhoto(input_image)
 
-    def setPhoto(self):
-        self.imageLabel.setImage(limit_scale(self.input_img, self.imageLabelWidth, self.imageLabelHeight))
+        # self.clearLayout(self.localPalettesLayout)
+        # self.setAllLocalColorPalettes()
 
-    def setGlobalPalettes(self):
-        self.globalColorPalettes = generateGlobalPalettes(self.input_img_np, palette_num=self.palette_num)
-        for i in range(self.palette_num):
-            self.globalPalettes[i].setColor(self.globalColorPalettes[i])
+    def handlePaletteLabelClicked(self, chosen_color_Lab, is_global, palette_index):
+        if is_global:
+            self.globalPalettes[palette_index].setColor(chosen_color_Lab, 
+                                                        size=GLOBAL_COLOR_PALETTE_SIZE)
+            self.palette_controller.handleGlobalPaletteChanged(chosen_color_Lab, palette_index)
 
-    def setSingleLocalColorPalettes(self, singleLocalColorPalettes: np.array):
-        hLayout = QtWidgets.QHBoxLayout()
-        for color in singleLocalColorPalettes:
-            paletteLabel = PaletteLabel()
-            paletteLabel.setAlignment(Qt.AlignCenter)
-            paletteLabel.setColor(color, size=30)
-            self.localPalettes.append(paletteLabel)
-            hLayout.addWidget(paletteLabel)
-        self.localPalettesLayout.addLayout(hLayout)
+    def setPhoto(self, image):
+        print("SET NEW IMAGE")
+        self.imageLabel.setImage(limit_scale(image, self.imageLabelWidth, self.imageLabelHeight))
+
+    def __setGlobalPalettes(self, global_palette_Lab):
+        for i in range(len(global_palette_Lab)):
+            self.globalPalettes[i].setColor(global_palette_Lab[i], 
+                                            size=GLOBAL_COLOR_PALETTE_SIZE)
+
+    # def setSingleLocalColorPalettes(self, singleLocalColorPalettes: np.array):
+    #     hLayout = QtWidgets.QHBoxLayout()
+    #     for color in singleLocalColorPalettes:
+    #         paletteLabel = PaletteLabel()
+    #         paletteLabel.setAlignment(Qt.AlignCenter)
+    #         paletteLabel.setColor(color, size=30)
+    #         self.localPalettes.append(paletteLabel)
+    #         hLayout.addWidget(paletteLabel)
+    #     self.localPalettesLayout.addLayout(hLayout)
     
     def setAllLocalColorPalettes(self):
         print('set all local palettes')

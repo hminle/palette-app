@@ -1,5 +1,5 @@
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
-from gui import MainWindow
+from gui.main_window import MainWindow
 
 import sys
 

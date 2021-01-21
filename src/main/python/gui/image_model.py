@@ -12,10 +12,13 @@ class ImageModel:
         self.current_image = copy.deepcopy(self.original_image)
 
     def get_current_image(self):
-        return self.current_image
+        return copy.deepcopy(self.current_image)
 
     def get_original_image(self):
-        return self.original_image
+        return copy.deepcopy(self.original_image)
 
     def update_image(self, modified_image):
         self.current_image = modified_image
+
+    def reset(self):
+        self.current_image = copy.deepcopy(self.original_image)

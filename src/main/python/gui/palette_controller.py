@@ -1,7 +1,7 @@
 import math
 import copy
 import numpy as np
-from PIL import Image, ImageQt
+from PIL import Image, ImageQt, ImageDraw
 from gui.global_palette_model import GlobalPaletteModel
 from gui.local_palette_model import LocalPaletteModel
 from core.util import rgb2lab, lab2rgb
@@ -20,11 +20,29 @@ class PaletteController:
     def load_image(self, input_path):
         self.image_model.load_image(input_path)
 
-    def get_current_image(self):
+    def get_image(self):
         return self.image_model.get_current_image()
 
-    def get_original_image(self):
-        return self.image_model.get_original_image()
+    def get_global_palette(self):
+        return self.global_palette_model.get_current_palette()
+
+    def get_single_local_palette(self, index):
+        return self.local_palette_model.get_palette(index)
+    
+    def get_all_local_palettes(self):
+        return self.local_palette_model.get_all_local_palettes()
+    
+    def reset(self):
+        self.global_palette_model.reset()
+        self.local_palette_model.reset()
+        self.image_model.reset()
+
+    def draw_rectangle(self, window_position):
+        image = self.get_image()
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((window_position), outline="red", width=5)
+        self.image_model.update_image(image)
+        self.main_window.setPhoto(image)
 
     def generate_global_palettes(self):
         input_image = self.image_model.get_current_image()
@@ -33,8 +51,8 @@ class PaletteController:
         self.global_palette_model.set_palette(global_palette_Lab)
         return global_palette_Lab
 
-    def generate_local_palettes(self, overlap_size, window_size):
-        input_image = self.image_model.get_current_image()
+    def generate_local_palettes(self, input_image, overlap_size, window_size):
+        # input_image RGB
         local_color_palettes = []
         num_col_slides = window_size
         num_row_slides = window_size
@@ -64,6 +82,8 @@ class PaletteController:
                             #build palette
                             sample_palette_Lab = build_palette(sample_Lab)
                             local_color_palettes.append(sample_palette_Lab)
+                            self.local_palette_model.add_local_palette(sample_palette_Lab, 
+                                                                       (j, i, j+col_step_final, i+row_step_final))
                         else: 
                             break
         return local_color_palettes

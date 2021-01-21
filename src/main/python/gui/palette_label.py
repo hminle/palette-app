@@ -10,6 +10,7 @@ from core.util import *
 
 
 class PaletteLabel(ImageLabel):
+    
     def __init__(self, parent, is_global=True, palette_index = -1,flags=Qt.WindowFlags()) -> None:
         super(PaletteLabel, self).__init__(parent, flags)
         self.palette_index = palette_index

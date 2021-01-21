@@ -110,7 +110,7 @@ def calc_weights(color, original_p):
             temp.append(gaussian(distance(original_p[j], original_p[i]), md))
         matrix.append(temp)
     phi = numpy.array(matrix)
-    lamb = numpy.linalg.inv(phi)
+    lamb = numpy.linalg.pinv(phi)
 
     #calc weights
     weights = [0 for _ in range(len(original_p))]

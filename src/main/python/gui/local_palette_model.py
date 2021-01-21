@@ -16,3 +16,13 @@ class LocalPaletteModel:
 
     def get_palette(self, index: int):
         return self.local_palettes.get(index)
+
+    def get_all_local_palettes(self):
+        list_local_palettes = []
+        for key in self.local_palettes.keys():
+            list_local_palettes.append(self.local_palettes.get(key).get('local_palette'))
+        return list_local_palettes
+
+    def reset(self):
+        # TODO: implement
+        pass

@@ -19,3 +19,6 @@ class GlobalPaletteModel:
 
     def update_palette(self, chosen_color_Lab, palette_index):
         self.current_global_palette[palette_index] = chosen_color_Lab
+
+    def reset(self):
+        self.current_global_palette = copy.deepcopy(self.original_global_palette)

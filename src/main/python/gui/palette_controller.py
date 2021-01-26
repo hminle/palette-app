@@ -31,6 +31,18 @@ class PaletteController:
     
     def get_all_local_palettes(self):
         return self.local_palette_model.get_all_local_palettes()
+
+    def get_original(self):
+        return {
+            "image": self.image_model.get_original_image(),
+            "global_palette": self.global_palette_model.get_original_palette(),
+        }
+
+    def get_current(self):
+        return {
+            "image": self.image_model.get_current_image(),
+            "global_palette": self.global_palette_model.get_current_palette(),
+        }
     
     def reset(self):
         self.global_palette_model.reset()
@@ -52,7 +64,11 @@ class PaletteController:
         return global_palette_Lab
 
     def generate_local_palettes(self, input_image, overlap_size, window_size):
+        print('GENERATE LOCAL PALETTE')
         # input_image RGB
+
+        # Reset local palette
+        self.local_palette_model.reset()
         local_color_palettes = []
         num_col_slides = window_size
         num_row_slides = window_size

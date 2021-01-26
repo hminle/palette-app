@@ -118,11 +118,17 @@ class MainWindow(QMainWindow):
 
         self.openButton = QtWidgets.QPushButton(self.centralwidget)
         self.openButton.setObjectName("openButton")
-        self.bottomGridLayout.addWidget(self.openButton, 0, 0, 1, 2)
+        self.bottomGridLayout.addWidget(self.openButton, 0, 0, 1, 1)
 
         self.resetButton = QtWidgets.QPushButton(self.centralwidget)
         self.resetButton.setObjectName("resetButton")
-        self.bottomGridLayout.addWidget(self.resetButton, 0, 2, 1, 1)
+        self.bottomGridLayout.addWidget(self.resetButton, 0, 1, 1, 1)
+
+        self.showOriginalButton = QtWidgets.QPushButton(self.centralwidget)
+        self.showOriginalButton.setObjectName("showOriginal")
+        self.showOriginalButton.setCheckable(True)
+        self.showOriginalButton.clicked.connect(self.handleShowOriginalClicked)
+        self.bottomGridLayout.addWidget(self.showOriginalButton, 0, 2, 1, 1)
 
         spacerItem = QtWidgets.QSpacerItem(588, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.bottomGridLayout.addItem(spacerItem, 0, 3, 1, 1)
@@ -221,6 +227,7 @@ class MainWindow(QMainWindow):
         self.overlapSizeDisplay.setText(_translate("MainWindow", "0"))
         self.resetButton.setText(_translate("MainWindow", "Reset"))
         self.openButton.setText(_translate("MainWindow", "Open"))
+        self.showOriginalButton.setText(_translate("MainWindow", "Show Original"))
         self.numWindowDisplay.setText(_translate("MainWindow", f"{self.window_size}x{self.window_size}"))
         self.numWindowLabel.setText(_translate("MainWindow", "Num Window"))
         self.overlapSizeLabel.setText(_translate("MainWindow", "Overlap Size"))
@@ -269,11 +276,28 @@ class MainWindow(QMainWindow):
         self.__setGlobalPalettes(original_global_palette_Lab)
 
         self.clearLayout(self.localPalettesLayout)
-        local_color_palettes = self.palette_controller.get_all_local_palettes()
+
+        local_color_palettes = self.palette_controller.generate_local_palettes(original_image,
+                                                                               self.overlap_size,
+                                                                               self.window_size)
         self.__setLocalColorPalettes(local_color_palettes)
         # TODO: remove this matplotlib test
         self.clear_plot()
         self.plot()
+
+    def handleShowOriginalClicked(self):
+        if self.showOriginalButton.isChecked():
+            original = self.palette_controller.get_original()
+            original_image = original.get('image')
+            original_global_palette_Lab = original.get('global_palette')
+            self.setPhoto(original_image)
+            self.__setGlobalPalettes(original_global_palette_Lab)
+        else:
+            current = self.palette_controller.get_current()
+            current_image = current.get('image')
+            current_global_palette_Lab = current.get('global_palette')
+            self.setPhoto(current_image)
+            self.__setGlobalPalettes(current_global_palette_Lab)
         
     def handlePaletteLabelClicked(self, chosen_color_Lab, is_global, palette_index):
         if is_global:
@@ -282,6 +306,13 @@ class MainWindow(QMainWindow):
             self.palette_controller.handleGlobalPaletteChanged(chosen_color_Lab, palette_index)
             self.clear_plot()
             self.plot()
+            # update local palettes
+            self.clearLayout(self.localPalettesLayout)
+            image = self.palette_controller.get_image()
+            local_color_palettes = self.palette_controller.generate_local_palettes(image,
+                                                                                   self.overlap_size,
+                                                                                   self.window_size)
+            self.__setLocalColorPalettes(local_color_palettes)
 
 
     def handlePushButtonPressed(self):

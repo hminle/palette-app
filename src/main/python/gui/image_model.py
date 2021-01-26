@@ -8,8 +8,8 @@ from core.util import *
 class ImageModel:
 
     def __init__(self):
-        self.original_image = None # Lab
-        self.current_image = None # Lab
+        self.original_image = None # RGB
+        self.current_image = None # RGB
         self.color_samples_RGB = None 
 
     def load_image(self, input_path):
@@ -43,7 +43,7 @@ class ImageModel:
         bins = simple_bins(bins)
         temp = []
         for color in bins.keys():
-            color = RegularRGB(LABtoRGB(RegularLAB(color)))
+            # color = RegularRGB(LABtoRGB(RegularLAB(color)))
             temp.append(color)
         color_samples_RGB = np.array(temp).astype(np.float32)
         color_samples_RGB = color_samples_RGB/255

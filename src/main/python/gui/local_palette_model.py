@@ -24,5 +24,6 @@ class LocalPaletteModel:
         return list_local_palettes
 
     def reset(self):
-        # TODO: implement
-        pass
+        if len(self.local_palettes.keys()) > 0:
+            self.local_palettes = {}
+            self.current_index = -1

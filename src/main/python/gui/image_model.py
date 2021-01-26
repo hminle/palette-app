@@ -10,11 +10,13 @@ class ImageModel:
     def __init__(self):
         self.original_image = None # RGB
         self.current_image = None # RGB
+        self.original_color_samples_RGB = None
         self.color_samples_RGB = None 
 
     def load_image(self, input_path):
         self.original_image = Image.open(input_path)
         self.current_image = copy.deepcopy(self.original_image)
+        self.original_color_samples_RGB = self.__get_simple_hist()
         self.color_samples_RGB = self.__get_simple_hist()
 
     def get_current_image(self):

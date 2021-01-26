@@ -266,7 +266,8 @@ class MainWindow(QMainWindow):
         self.__setLocalColorPalettes(local_color_palettes)
         # self.setAllLocalColorPalettes()
         # TODO: remove this matplotlib test
-        self.plot()
+        color_samples_RGB = self.palette_controller.image_model.color_samples_RGB
+        self.plot(color_samples_RGB)
 
     def handleResetButtonClicked(self):
         self.palette_controller.reset()
@@ -283,7 +284,8 @@ class MainWindow(QMainWindow):
         self.__setLocalColorPalettes(local_color_palettes)
         # TODO: remove this matplotlib test
         self.clear_plot()
-        self.plot()
+        color_samples_RGB = self.palette_controller.image_model.color_samples_RGB
+        self.plot(color_samples_RGB)
 
     def handleShowOriginalClicked(self):
         if self.showOriginalButton.isChecked():
@@ -292,12 +294,18 @@ class MainWindow(QMainWindow):
             original_global_palette_Lab = original.get('global_palette')
             self.setPhoto(original_image)
             self.__setGlobalPalettes(original_global_palette_Lab)
+            self.clear_plot()
+            original_color_samples_RGB = self.palette_controller.image_model.original_color_samples_RGB
+            self.plot(original_color_samples_RGB)
         else:
             current = self.palette_controller.get_current()
             current_image = current.get('image')
             current_global_palette_Lab = current.get('global_palette')
             self.setPhoto(current_image)
             self.__setGlobalPalettes(current_global_palette_Lab)
+            self.clear_plot()
+            color_samples_RGB = self.palette_controller.image_model.color_samples_RGB
+            self.plot(color_samples_RGB)
         
     def handlePaletteLabelClicked(self, chosen_color_Lab, is_global, palette_index):
         if is_global:
@@ -305,7 +313,8 @@ class MainWindow(QMainWindow):
                                                         size=GLOBAL_COLOR_PALETTE_SIZE)
             self.palette_controller.handleGlobalPaletteChanged(chosen_color_Lab, palette_index)
             self.clear_plot()
-            self.plot()
+            color_samples_RGB = self.palette_controller.image_model.color_samples_RGB
+            self.plot(color_samples_RGB)
             # update local palettes
             self.clearLayout(self.localPalettesLayout)
             image = self.palette_controller.get_image()
@@ -361,8 +370,8 @@ class MainWindow(QMainWindow):
                 else:
                     self.clearLayout(item.layout())
 
-    def plot(self):
-        color_samples_RGB = self.palette_controller.image_model.color_samples_RGB
+    def plot(self, color_samples_RGB):
+        # color_samples_RGB = self.palette_controller.image_model.color_samples_RGB
         self.matplotlibCanvas.axes.scatter(color_samples_RGB[:, 0], 
                                            color_samples_RGB[:, 1], 
                                            color_samples_RGB[:, 2],

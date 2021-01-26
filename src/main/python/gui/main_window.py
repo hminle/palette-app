@@ -58,7 +58,7 @@ class MainWindow(QMainWindow):
         self.palette_num: int = 5
         self.window_size: int = 5
         self.overlap_size: int = 0
-        self.overlap_size_interval: int = 100
+        self.overlap_size_interval: int = 5
         self.setupUi()
 
     def setupUi(self) -> None:
@@ -157,7 +157,7 @@ class MainWindow(QMainWindow):
 
         self.overlapSizeSlider = QtWidgets.QSlider(self.centralwidget)
         self.overlapSizeSlider.setMinimum(0)
-        self.overlapSizeSlider.setMaximum(1000)
+        self.overlapSizeSlider.setMaximum(100)
         self.overlapSizeSlider.setTickInterval(self.overlap_size_interval)
         self.overlapSizeSlider.setSingleStep(self.overlap_size_interval)
         self.overlapSizeSlider.setOrientation(QtCore.Qt.Horizontal)
@@ -235,18 +235,26 @@ class MainWindow(QMainWindow):
     def handleNumWindowChange(self, value: int):
         self.window_size = value
         self.numWindowDisplay.setText(f"{value}x{value}")
-        # if self.palette_controller is not None:
-        #     self.clearLayout(self.localPalettesLayout)
-        #     self.setAllLocalColorPalettes()
+        if self.palette_controller is not None:
+            self.clearLayout(self.localPalettesLayout)
+            image = self.palette_controller.get_image()
+            local_color_palettes = self.palette_controller.generate_local_palettes(image,
+                                                                                   self.overlap_size, 
+                                                                                   self.window_size)
+            self.__setLocalColorPalettes(local_color_palettes)
 
     def handleOverlapSizeChange(self, value: int):
         real_value = round(value / self.overlap_size_interval)*self.overlap_size_interval
         self.overlap_size = real_value
         self.overlapSizeSlider.setTickPosition(real_value)
         self.overlapSizeDisplay.setText(str(real_value))
-        # if self.palette_controller is not None:
-        #     self.clearLayout(self.localPalettesLayout)
-            # self.setAllLocalColorPalettes()
+        if self.palette_controller is not None:
+            self.clearLayout(self.localPalettesLayout)
+            image = self.palette_controller.get_image()
+            local_color_palettes = self.palette_controller.generate_local_palettes(image,
+                                                                                   self.overlap_size, 
+                                                                                   self.window_size)
+            self.__setLocalColorPalettes(local_color_palettes)
 
     def handleOpenButtonClicked(self):
         input_path = QFileDialog.getOpenFileName()[0]
@@ -264,8 +272,7 @@ class MainWindow(QMainWindow):
                                                                                self.overlap_size, 
                                                                                self.window_size)
         self.__setLocalColorPalettes(local_color_palettes)
-        # self.setAllLocalColorPalettes()
-        # TODO: remove this matplotlib test
+
         color_samples_RGB = self.palette_controller.image_model.color_samples_RGB
         self.plot(color_samples_RGB)
 

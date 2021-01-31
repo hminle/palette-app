@@ -3,8 +3,8 @@ import copy
 class GlobalPaletteModel:
 
     def __init__(self):
-        self.original_global_palette = None # Lab
-        self.current_global_palette = None # Lab
+        self.original_global_palette = None # Lab - ByteLAB 0-255
+        self.current_global_palette = None # Lab - ByteLAB 0-255
 
     def set_palette(self, global_palette):
         if self.original_global_palette is None:

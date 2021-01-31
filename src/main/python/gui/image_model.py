@@ -7,11 +7,13 @@ from core.util import *
 
 class ImageModel:
 
-    def __init__(self):
+    def __init__(self, palette_controller):
+        self.palette_controller = palette_controller
         self.original_image = None # RGB
         self.current_image = None # RGB
         self.original_color_samples_RGB = None
         self.color_samples_RGB = None 
+        self.weights_map = None
 
     def load_image(self, input_path):
         self.original_image = Image.open(input_path)
@@ -28,6 +30,9 @@ class ImageModel:
     def update_image(self, modified_image):
         self.current_image = modified_image
         self.color_samples_RGB = self.__get_simple_hist()
+
+    def set_weights_map(self, global_palette_Lab):
+        self.weights_map = self.__calc_weights_map(global_palette_Lab)
 
     def reset(self):
         self.current_image = copy.deepcopy(self.original_image)
@@ -116,3 +121,48 @@ class ImageModel:
 
         print('Total time', time.time() - t)
         return result
+
+
+    def __calc_weights_map(self, global_palette_Lab):
+        def mean_distance(global_palette_Lab):
+            dists = []
+            for a, b in itertools.combinations(global_palette_Lab, 2):
+                dists.append(distance(a, b))
+            return sum(dists) / len(dists)
+
+        def gaussian(r, md):
+            return np.exp(((r/md)**2) * -0.5)
+
+        #init
+        global_palette_Lab = [RegularLAB(c) for c in global_palette_Lab]
+        image_lab = np.array(rgb2lab(self.current_image))
+        original_size: tuple = image_lab.shape
+        lab_np_flat = np.reshape(image_lab, (-1,3))
+        lab_np_flat_regular = np.apply_along_axis(RegularLAB, 1, lab_np_flat)
+        md = mean_distance(global_palette_Lab)
+
+        #get phi and lambda
+        matrix = []
+        for i in range(len(global_palette_Lab)):
+            temp = []
+            for j in range(len(global_palette_Lab)):
+                temp.append(gaussian(distance(global_palette_Lab[j], global_palette_Lab[i]), md))
+            matrix.append(temp)
+        phi = np.array(matrix)
+        lamb = np.linalg.inv(phi)
+
+        #calc weights
+        weights = np.zeros((lab_np_flat.shape[0], len(global_palette_Lab)))
+        for i in range(len(global_palette_Lab)):
+            for j in range(len(global_palette_Lab)):
+                vectorized_palette_j = np.zeros((lab_np_flat.shape[0], lab_np_flat.shape[1]))
+                vectorized_palette_j[0:None, :] = global_palette_Lab[j]
+                dist_vector = np.linalg.norm(lab_np_flat_regular - vectorized_palette_j, axis=1)
+                weights[:, i] += lamb[i][j] * gaussian(dist_vector, md)
+        #normalize weights
+        weights[weights < 0] = 0
+        row_sums = weights.sum(axis=1, keepdims=True)
+        normalized_weights = weights / row_sums
+        weights_map = np.reshape(normalized_weights, 
+                                    (original_size[0], original_size[1], normalized_weights.shape[1]))
+        return weights_map

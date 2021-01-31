@@ -15,7 +15,7 @@ class PaletteController:
         self.main_window = main_window
         self.global_palette_model = GlobalPaletteModel()
         self.local_palette_model = LocalPaletteModel()
-        self.image_model = ImageModel()
+        self.image_model = ImageModel(self)
 
     def load_image(self, input_path):
         self.image_model.load_image(input_path)
@@ -61,6 +61,7 @@ class PaletteController:
         input_image_Lab = rgb2lab(input_image)
         global_palette_Lab = build_palette(input_image_Lab)
         self.global_palette_model.set_palette(global_palette_Lab)
+        self.image_model.set_weights_map(global_palette_Lab)
         return global_palette_Lab
 
     def generate_local_palettes(self, input_image, overlap_size, window_size):
@@ -111,6 +112,7 @@ class PaletteController:
         target_image_RGB = self.__transfer_image(source_palette, target_palette)
         self.image_model.update_image(target_image_RGB)
         self.main_window.setPhoto(target_image_RGB)
+        self.image_model.set_weights_map(target_palette)
 
     def __transfer_image(self, source_palette, target_palette):
         source_image = self.image_model.get_current_image()

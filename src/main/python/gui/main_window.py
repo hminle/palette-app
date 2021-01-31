@@ -45,9 +45,9 @@ class MplCanvas(FigureCanvas):
 
 class PushButton(QPushButton):
 
-    def __init__(self, row_index):
+    def __init__(self, index):
         super(PushButton, self).__init__()
-        self.row_index = row_index
+        self.index = index
 
 class MainWindow(QMainWindow):
 
@@ -92,8 +92,15 @@ class MainWindow(QMainWindow):
             self.globalPalettes.append(PaletteLabel(self, palette_index=i))
             self.globalPalettes[-1].setAlignment(Qt.AlignCenter)
         self.globalPalettesLayout = QtWidgets.QHBoxLayout()
-        for label in self.globalPalettes:
-            self.globalPalettesLayout.addWidget(label)
+        for i in range(len(self.globalPalettes)):
+            showWeightsPushButton = PushButton(i)
+            showWeightsPushButton.setText('Show Weights')
+            showWeightsPushButton.setObjectName(f"Show Weights {i} th")
+            showWeightsPushButton.resize(30, 20)
+            showWeightsPushButton.setCheckable(True)
+            showWeightsPushButton.clicked.connect(self.handleShowWeightsButtonPressed)
+            self.globalPalettesLayout.addWidget(showWeightsPushButton)
+            self.globalPalettesLayout.addWidget(self.globalPalettes[i])
         self.leftVerticalLayout.addLayout(self.globalPalettesLayout)
         self.horizontalLayout.addLayout(self.leftVerticalLayout)
 
@@ -331,13 +338,28 @@ class MainWindow(QMainWindow):
             self.__setLocalColorPalettes(local_color_palettes)
 
 
-    def handlePushButtonPressed(self):
+    def handleShowWindowButtonPressed(self):
         button_sender = self.sender()
-        print(f"Button {button_sender.row_index} th clicked:")
-        palette_index = button_sender.row_index
+        print(f"Button {button_sender.index} th clicked:")
+        palette_index = button_sender.index
         local_palette_info = self.palette_controller.get_single_local_palette(palette_index)
         window_position = local_palette_info.get('window_position')
         self.palette_controller.draw_rectangle(window_position)
+
+    def handleShowWeightsButtonPressed(self):
+        button_sender = self.sender()
+        if button_sender.isChecked():
+            index = button_sender.index
+            weights_map = self.palette_controller.image_model.weights_map
+            single_map = weights_map[:, :, index]
+            map_image = Image.fromarray(single_map)
+            map_image = map_image.convert("L")
+            self.setPhoto(map_image)
+        else:
+            image = self.palette_controller.get_image()
+            self.setPhoto(image)
+
+
         
     def setPhoto(self, image):
         print("SET NEW IMAGE")
@@ -357,7 +379,7 @@ class MainWindow(QMainWindow):
             pushButton.setText('Show')
             pushButton.setObjectName(f"Show Button {i} th")
             pushButton.resize(30, 20)
-            pushButton.pressed.connect(self.handlePushButtonPressed)
+            pushButton.pressed.connect(self.handleShowWindowButtonPressed)
             hLayout.addWidget(pushButton)
             for color in local_color_palettes[i]:
                 paletteLabel = PaletteLabel(self, is_global=False, palette_index=count_palette_index)

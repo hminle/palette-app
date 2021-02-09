@@ -73,6 +73,7 @@ class MainWindow(QMainWindow):
         self.gridLayout_2.setObjectName("gridLayout_2")
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
+
         self.imageLabel = ImageLabel(self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -352,14 +353,13 @@ class MainWindow(QMainWindow):
             index = button_sender.index
             weights_map = self.palette_controller.image_model.weights_map
             single_map = weights_map[:, :, index]
-            map_image = Image.fromarray(single_map)
-            map_image = map_image.convert("L")
-            self.setPhoto(map_image)
+            cm = plt.get_cmap('binary')
+            colored_map = cm(single_map)
+            colored_map = Image.fromarray((colored_map[:, :, :3] * 255).astype(np.uint8))
+            self.setPhoto(colored_map)
         else:
             image = self.palette_controller.get_image()
             self.setPhoto(image)
-
-
         
     def setPhoto(self, image):
         print("SET NEW IMAGE")

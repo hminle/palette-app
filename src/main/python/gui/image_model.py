@@ -159,10 +159,18 @@ class ImageModel:
                 vectorized_palette_j[0:None, :] = global_palette_Lab[j]
                 dist_vector = np.linalg.norm(lab_np_flat_regular - vectorized_palette_j, axis=1)
                 weights[:, i] += lamb[i][j] * gaussian(dist_vector, md)
+
+        # for i in range(len(global_palette_Lab)):
+        #     vectorized_palette_i = np.zeros((lab_np_flat.shape[0], lab_np_flat.shape[1]))
+        #     vectorized_palette_i[0:None, :] = global_palette_Lab[i]
+        #     dist_vector = np.linalg.norm(lab_np_flat_regular - vectorized_palette_i, axis=1)
+        #     weights[:, i] = dist_vector
+
         #normalize weights
         weights[weights < 0] = 0
         row_sums = weights.sum(axis=1, keepdims=True)
         normalized_weights = weights / row_sums
+        normalized_weights = (normalized_weights == normalized_weights.max(axis=1, keepdims=True)).astype(np.float32)
         weights_map = np.reshape(normalized_weights, 
                                     (original_size[0], original_size[1], normalized_weights.shape[1]))
         return weights_map

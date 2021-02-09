@@ -57,6 +57,7 @@ class PaletteController:
         self.main_window.setPhoto(image)
 
     def generate_global_palettes(self):
+        self.global_palette_model.reset()
         input_image = self.image_model.get_current_image()
         input_image_Lab = rgb2lab(input_image)
         global_palette_Lab = build_palette(input_image_Lab)

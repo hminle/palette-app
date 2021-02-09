@@ -7,8 +7,7 @@ class GlobalPaletteModel:
         self.current_global_palette = None # Lab
 
     def set_palette(self, global_palette):
-        if self.original_global_palette is None:
-            self.original_global_palette = copy.deepcopy(global_palette)
+        self.original_global_palette = copy.deepcopy(global_palette)
         self.current_global_palette = global_palette
 
     def get_current_palette(self):

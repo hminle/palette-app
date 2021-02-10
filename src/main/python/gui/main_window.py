@@ -17,11 +17,12 @@ from PyQt5.QtWidgets import QFileDialog, QMainWindow, QLabel, QScrollArea, QPush
 from PyQt5.QtGui import QImage
 from skimage import io, util, transform
 import numpy as np
-from utils import limit_scale, generateGlobalPalettes, generateLocalPalettes
+from utils import limit_scale
 from PIL import Image, ImageQt
+from gui.image_label import ImageLabel
 from gui.palette_label import PaletteLabel
 from gui.palette_controller import PaletteController
-from gui.image_label import ImageLabel
+from gui.image_model import ImageModel
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -31,8 +32,7 @@ from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanva
                                                 NavigationToolbar2QT as NavigationToolbar)           
 from matplotlib.figure import Figure
 
-GLOBAL_COLOR_PALETTE_SIZE = 60
-LOCAL_COLOR_PALETTE_SIZE = 20
+GLOBAL_COLOR_PALETTE_SIZE = 30
 
 class MplCanvas(FigureCanvas):
 
@@ -45,9 +45,9 @@ class MplCanvas(FigureCanvas):
 
 class PushButton(QPushButton):
 
-    def __init__(self, row_index):
+    def __init__(self, pos, parent=None):
         super(PushButton, self).__init__()
-        self.row_index = row_index
+        self.pos = pos
 
 class MainWindow(QMainWindow):
 
@@ -73,20 +73,21 @@ class MainWindow(QMainWindow):
         self.gridLayout_2.setObjectName("gridLayout_2")
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.imageLabel = ImageLabel(self.centralwidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.imageLabel.sizePolicy().hasHeightForWidth())
-        self.imageLabel.setSizePolicy(sizePolicy)
-        self.imageLabel.setText("")
-        self.imageLabel.setObjectName("imageLabel")
-        #self.horizontalLayout.addWidget(self.imageLabel)
 
+        # Left Vertical Layout
         self.leftVerticalLayout = QtWidgets.QVBoxLayout()
         self.leftVerticalLayout.setObjectName("leftVerticalLayout")
-        self.leftVerticalLayout.addWidget(self.imageLabel)
 
+        self.leftImageLabel = ImageLabel(self.centralwidget)
+        leftSizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        leftSizePolicy.setHorizontalStretch(0)
+        leftSizePolicy.setVerticalStretch(2)
+        leftSizePolicy.setHeightForWidth(self.leftImageLabel.sizePolicy().hasHeightForWidth())
+        self.leftImageLabel.setSizePolicy(leftSizePolicy)
+        self.leftImageLabel.setText("")
+        self.leftImageLabel.setObjectName("leftImageLabel")
+
+        # Global Palettes of Relectance
         self.globalPalettes: List[PaletteLabel] = []
         for i in range(self.palette_num):
             self.globalPalettes.append(PaletteLabel(self, palette_index=i))
@@ -94,82 +95,95 @@ class MainWindow(QMainWindow):
         self.globalPalettesLayout = QtWidgets.QHBoxLayout()
         for label in self.globalPalettes:
             self.globalPalettesLayout.addWidget(label)
+
+        # Leftt Bottom Grid Layout
+        self.leftBottomGridLayout = QtWidgets.QGridLayout()
+        self.leftBottomGridLayout.setObjectName("bottomGridLayout")
+
+        self.leftOpenButton = PushButton('left')
+        self.leftOpenButton.setObjectName("leftOpenButton")
+        self.leftBottomGridLayout.addWidget(self.leftOpenButton, 0, 0, 1, 1)
+
+        # self.resetButton = QtWidgets.QPushButton(self.centralwidget)
+        # self.resetButton.setObjectName("resetButton")
+        # self.leftBottomGridLayout.addWidget(self.resetButton, 0, 1, 1, 1)
+
+        leftSpacerItem = QtWidgets.QSpacerItem(388, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.leftBottomGridLayout.addItem(leftSpacerItem, 0, 2, 1, 1)
+       
+        self.leftVerticalLayout.addWidget(self.leftImageLabel)
         self.leftVerticalLayout.addLayout(self.globalPalettesLayout)
+        self.leftVerticalLayout.addLayout(self.leftBottomGridLayout)
+
         self.horizontalLayout.addLayout(self.leftVerticalLayout)
 
-        self.rightVerticalLayout = QtWidgets.QVBoxLayout()
-        self.rightVerticalLayout.setContentsMargins(0, -1, -1, -1)
-        self.rightVerticalLayout.setObjectName("rightVerticalLayout")
+        # middle Vertical Layout
+        self.middleVerticalLayout = QtWidgets.QVBoxLayout()
+        self.middleVerticalLayout.setObjectName("middleVerticalLayout")
+        self.middleImageLabel = ImageLabel(self.centralwidget)
+        middleSizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        middleSizePolicy.setHorizontalStretch(0)
+        middleSizePolicy.setVerticalStretch(0)
+        middleSizePolicy.setHeightForWidth(self.middleImageLabel.sizePolicy().hasHeightForWidth())
+        self.middleImageLabel.setSizePolicy(middleSizePolicy)
+        self.middleImageLabel.setText("")
+        self.middleImageLabel.setObjectName("middleImageLabel")
 
-        self.localColorPalettes = QtWidgets.QWidget() #Fix here
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
-        # sizePolicy.setHorizontalStretch(0)
-        # sizePolicy.setVerticalStretch(3)
-        sizePolicy.setHeightForWidth(self.localColorPalettes.sizePolicy().hasHeightForWidth())
-        self.localColorPalettes.setSizePolicy(sizePolicy)
-        # self.localColorPalettes.setText("")
-        self.localColorPalettes.setObjectName("localColorPalettes")
+        # middlet Bottom Grid Layout
+        self.middleBottomGridLayout = QtWidgets.QGridLayout()
+        self.middleBottomGridLayout.setObjectName("bottomGridLayout")
+
+        self.middleOpenButton = PushButton('middle')
+        self.middleOpenButton.setObjectName("middleOpenButton")
+        self.middleBottomGridLayout.addWidget(self.middleOpenButton, 0, 0, 1, 1)
+
+        # self.resetButton = QtWidgets.QPushButton(self.centralwidget)
+        # self.resetButton.setObjectName("resetButton")
+        # self.middleBottomGridLayout.addWidget(self.resetButton, 0, 1, 1, 1)
+
+        middleSpacerItem = QtWidgets.QSpacerItem(388, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.middleBottomGridLayout.addItem(middleSpacerItem, 0, 2, 1, 1)
+        
+        self.middleVerticalLayout.addWidget(self.middleImageLabel)
+        self.middleVerticalLayout.addLayout(self.middleBottomGridLayout)
+
+        self.horizontalLayout.addLayout(self.middleVerticalLayout)
+
+        # Right Vertical Layout
+        self.rightVerticalLayout = QtWidgets.QVBoxLayout()
+        self.rightVerticalLayout.setObjectName("rightVerticalLayout")
+        self.rightImageLabel = ImageLabel(self.centralwidget)
+        rightSizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        rightSizePolicy.setHorizontalStretch(0)
+        rightSizePolicy.setVerticalStretch(0)
+        rightSizePolicy.setHeightForWidth(self.rightImageLabel.sizePolicy().hasHeightForWidth())
+        self.rightImageLabel.setSizePolicy(rightSizePolicy)
+        self.rightImageLabel.setText("")
+        self.rightImageLabel.setObjectName("rightImageLabel")
+
+        # rightt Bottom Grid Layout
+        self.rightBottomGridLayout = QtWidgets.QGridLayout()
+        self.rightBottomGridLayout.setObjectName("bottomGridLayout")
+
+        self.rightOpenButton = PushButton('right')
+        self.rightOpenButton.setObjectName("rightOpenButton")
+        self.rightBottomGridLayout.addWidget(self.rightOpenButton, 0, 0, 1, 1)
+
+        # self.resetButton = QtWidgets.QPushButton(self.centralwidget)
+        # self.resetButton.setObjectName("resetButton")
+        # self.rightBottomGridLayout.addWidget(self.resetButton, 0, 1, 1, 1)
+
+        rightSpacerItem = QtWidgets.QSpacerItem(388, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.rightBottomGridLayout.addItem(rightSpacerItem, 0, 2, 1, 1)
+
+        self.rightVerticalLayout.addWidget(self.rightImageLabel)
+        self.rightVerticalLayout.addLayout(self.rightBottomGridLayout)
 
         self.horizontalLayout.addLayout(self.rightVerticalLayout)
+
+        # End Horizontal Layout
         self.gridLayout_2.addLayout(self.horizontalLayout, 0, 0, 1, 1)
 
-        self.bottomGridLayout = QtWidgets.QGridLayout()
-        self.bottomGridLayout.setObjectName("bottomGridLayout")
-
-        self.openButton = QtWidgets.QPushButton(self.centralwidget)
-        self.openButton.setObjectName("openButton")
-        self.bottomGridLayout.addWidget(self.openButton, 0, 0, 1, 1)
-
-        self.resetButton = QtWidgets.QPushButton(self.centralwidget)
-        self.resetButton.setObjectName("resetButton")
-        self.bottomGridLayout.addWidget(self.resetButton, 0, 1, 1, 1)
-
-        self.showOriginalButton = QtWidgets.QPushButton(self.centralwidget)
-        self.showOriginalButton.setObjectName("showOriginal")
-        self.showOriginalButton.setCheckable(True)
-        self.showOriginalButton.clicked.connect(self.handleShowOriginalClicked)
-        self.bottomGridLayout.addWidget(self.showOriginalButton, 0, 2, 1, 1)
-
-        spacerItem = QtWidgets.QSpacerItem(588, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.bottomGridLayout.addItem(spacerItem, 0, 3, 1, 1)
-        
-        self.numWindowLabel = QtWidgets.QLabel(self.centralwidget)
-        self.numWindowLabel.setObjectName("numWindowLabel")
-        self.bottomGridLayout.addWidget(self.numWindowLabel, 1, 0, 1, 1)
-
-        self.numWindowSlider = QtWidgets.QSlider(self.centralwidget)
-        self.numWindowSlider.setMinimum(1)
-        self.numWindowSlider.setMaximum(10)
-        self.numWindowSlider.setSingleStep(1)
-        self.numWindowSlider.setValue(self.window_size)
-        self.numWindowSlider.setSliderPosition(self.window_size)
-        self.numWindowSlider.setOrientation(QtCore.Qt.Horizontal)
-        self.numWindowSlider.setObjectName("numWindowSlider")
-        self.bottomGridLayout.addWidget(self.numWindowSlider, 1, 1, 1, 2)
-
-        self.numWindowDisplay = QtWidgets.QLabel(self.centralwidget)
-        self.numWindowDisplay.setObjectName("numWindowDisplay")
-        self.bottomGridLayout.addWidget(self.numWindowDisplay, 1, 3, 1, 1)
-
-        self.overlapSizeLabel = QtWidgets.QLabel(self.centralwidget)
-        self.overlapSizeLabel.setObjectName("overlapSizeLabel")
-        self.bottomGridLayout.addWidget(self.overlapSizeLabel, 2, 0, 1, 1)
-
-        self.overlapSizeSlider = QtWidgets.QSlider(self.centralwidget)
-        self.overlapSizeSlider.setMinimum(0)
-        self.overlapSizeSlider.setMaximum(100)
-        self.overlapSizeSlider.setTickInterval(self.overlap_size_interval)
-        self.overlapSizeSlider.setSingleStep(self.overlap_size_interval)
-        self.overlapSizeSlider.setOrientation(QtCore.Qt.Horizontal)
-        self.overlapSizeSlider.setObjectName("overlapSizeSlider")
-        self.bottomGridLayout.addWidget(self.overlapSizeSlider, 2, 1, 1, 2)
-
-        self.overlapSizeDisplay = QtWidgets.QLabel(self.centralwidget)
-        self.overlapSizeDisplay.setObjectName("overlapSizeDisplay")
-        self.bottomGridLayout.addWidget(self.overlapSizeDisplay, 2, 3, 1, 1)
-
-        self.leftVerticalLayout.addLayout(self.bottomGridLayout)
-        # self.gridLayout_2.addLayout(self.bottomGridLayout, 1, 0, 1, 1)
         self.centralGridLayout.addLayout(self.gridLayout_2, 0, 0, 1, 1)
         self.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(self)
@@ -184,188 +198,84 @@ class MainWindow(QMainWindow):
         QtCore.QMetaObject.connectSlotsByName(self)
 
         # Add code
-        self.palette_controller = None
-        self.openButton.clicked.connect(self.handleOpenButtonClicked)
-        self.resetButton.clicked.connect(self.handleResetButtonClicked)
-        self.numWindowSlider.valueChanged['int'].connect(self.handleNumWindowChange)
-        self.overlapSizeSlider.valueChanged['int'].connect(self.handleOverlapSizeChange)
-        self.imageLabelWidth: int = 800
-        self.imageLabelHeight: int = 600
+        self.leftOpenButton.clicked.connect(self.handleOpenButtonClicked)
+        self.middleOpenButton.clicked.connect(self.handleOpenButtonClicked)
+        self.rightOpenButton.clicked.connect(self.handleOpenButtonClicked)
+        # self.resetButton.clicked.connect(self.handleResetButtonClicked)
 
-        self.localPalettesLayout = QtWidgets.QVBoxLayout()
-        self.localPalettesLayout.setObjectName("localPalettesLayout")
-        self.localPalettes: List[PaletteLabel] = []
+        self.imageLabelWidth: int = 400
+        self.imageLabelHeight: int = 400
+        # self.left_image_model = ImageModel()
+        # self.middle_image_model = ImageModel()
+        self.right_image_model = ImageModel()
 
-        self.localColorPalettes.setLayout(self.localPalettesLayout)
-        self.scroll = QScrollArea()
-        self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setWidget(self.localColorPalettes)
+        self.left_palette_controller = None
+        self.middle_palette_controller = None
 
-        self.rightVerticalLayout.addWidget(self.scroll)
-
-
-        self.matplotlibCanvas = MplCanvas(self, width=5, height=4, dpi=100)
-
-        # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
-        self.toolbar = NavigationToolbar(self.matplotlibCanvas, self)
-
-        self.matplotlibLayout = QtWidgets.QVBoxLayout()
-        self.matplotlibLayout.addWidget(self.toolbar)
-        self.matplotlibLayout.addWidget(self.matplotlibCanvas)
-
-        # Create a placeholder widget to hold our toolbar and canvas.
-        self.matplotlibWidget = QtWidgets.QWidget()
-        self.matplotlibWidget.setLayout(self.matplotlibLayout)
-        self.rightVerticalLayout.addWidget(self.matplotlibWidget)
 
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
-        self.setWindowTitle(_translate("MainWindow", "Palette App"))
-        self.overlapSizeDisplay.setText(_translate("MainWindow", "0"))
-        self.resetButton.setText(_translate("MainWindow", "Reset"))
-        self.openButton.setText(_translate("MainWindow", "Open"))
-        self.showOriginalButton.setText(_translate("MainWindow", "Show Original"))
-        self.numWindowDisplay.setText(_translate("MainWindow", f"{self.window_size}x{self.window_size}"))
-        self.numWindowLabel.setText(_translate("MainWindow", "Num Window"))
-        self.overlapSizeLabel.setText(_translate("MainWindow", "Overlap Size"))
-    
-    def handleNumWindowChange(self, value: int):
-        self.window_size = value
-        self.numWindowDisplay.setText(f"{value}x{value}")
-        if self.palette_controller is not None:
-            self.clearLayout(self.localPalettesLayout)
-            image = self.palette_controller.get_image()
-            local_color_palettes = self.palette_controller.generate_local_palettes(image,
-                                                                                   self.overlap_size, 
-                                                                                   self.window_size)
-            self.__setLocalColorPalettes(local_color_palettes)
-
-    def handleOverlapSizeChange(self, value: int):
-        real_value = round(value / self.overlap_size_interval)*self.overlap_size_interval
-        self.overlap_size = real_value
-        self.overlapSizeSlider.setTickPosition(real_value)
-        self.overlapSizeDisplay.setText(str(real_value))
-        if self.palette_controller is not None:
-            self.clearLayout(self.localPalettesLayout)
-            image = self.palette_controller.get_image()
-            local_color_palettes = self.palette_controller.generate_local_palettes(image,
-                                                                                   self.overlap_size, 
-                                                                                   self.window_size)
-            self.__setLocalColorPalettes(local_color_palettes)
+        self.setWindowTitle(_translate("MainWindow", "Intrinsic App"))
+        self.leftOpenButton.setText(_translate("MainWindow", "Open"))
+        self.middleOpenButton.setText(_translate("MainWindow", "Open"))
+        self.rightOpenButton.setText(_translate("MainWindow", "Open"))
 
     def handleOpenButtonClicked(self):
+        button_sender = self.sender()
+        button_pos = button_sender.pos
+
         input_path = QFileDialog.getOpenFileName()[0]
         print(input_path)
-        if self.palette_controller is None:
-            self.palette_controller = PaletteController(self)
-        self.palette_controller.load_image(input_path)
-        global_palette_Lab = self.palette_controller.generate_global_palettes()
-        self.__setGlobalPalettes(global_palette_Lab)
-        input_image = self.palette_controller.get_image()
-        self.setPhoto(input_image)
 
-        self.clearLayout(self.localPalettesLayout)
-        local_color_palettes = self.palette_controller.generate_local_palettes(input_image,
-                                                                               self.overlap_size, 
-                                                                               self.window_size)
-        self.__setLocalColorPalettes(local_color_palettes)
+        if button_pos == 'left':
+            if self.left_palette_controller is None:
+                self.left_palette_controller = PaletteController(self)
+            self.left_palette_controller.load_image(input_path)
+            global_palette_Lab = self.left_palette_controller.generate_global_palettes()
+            self.__setGlobalPalettes(global_palette_Lab)
 
-        color_samples_RGB = self.palette_controller.image_model.color_samples_RGB
-        self.plot(color_samples_RGB)
+            input_image = self.left_palette_controller.get_image()
+            self.setPhoto(self.leftImageLabel, input_image)
+            # self.clear_plot(self.leftMatplotlibCanvas)
+            # self.plot(self.leftMatplotlibCanvas, color_samples_RGB)
+        elif button_pos == 'middle':
+            if self.middle_palette_controller is None:
+                self.middle_palette_controller = PaletteController(self)
+            self.middle_palette_controller.load_image(input_path)
+            s_image = self.middle_palette_controller.get_image()
+            r_image = self.left_palette_controller.get_image()
+            reconstructed_image = self.reconstruct_image(r_image, s_image)
+            self.setPhoto(self.middleImageLabel, reconstructed_image)
 
-    def handleResetButtonClicked(self):
-        self.palette_controller.reset()
-        original_image = self.palette_controller.get_image()
-        self.setPhoto(original_image)
-        original_global_palette_Lab = self.palette_controller.get_global_palette()
-        self.__setGlobalPalettes(original_global_palette_Lab)
-
-        self.clearLayout(self.localPalettesLayout)
-
-        local_color_palettes = self.palette_controller.generate_local_palettes(original_image,
-                                                                               self.overlap_size,
-                                                                               self.window_size)
-        self.__setLocalColorPalettes(local_color_palettes)
-        # TODO: remove this matplotlib test
-        self.clear_plot()
-        color_samples_RGB = self.palette_controller.image_model.color_samples_RGB
-        self.plot(color_samples_RGB)
-
-    def handleShowOriginalClicked(self):
-        if self.showOriginalButton.isChecked():
-            original = self.palette_controller.get_original()
-            original_image = original.get('image')
-            original_global_palette_Lab = original.get('global_palette')
-            self.setPhoto(original_image)
-            self.__setGlobalPalettes(original_global_palette_Lab)
-            self.clear_plot()
-            original_color_samples_RGB = self.palette_controller.image_model.original_color_samples_RGB
-            self.plot(original_color_samples_RGB)
+            # self.clear_plot(self.middleMatplotlibCanvas)
+            # self.plot(self.middleMatplotlibCanvas, color_samples_RGB)
         else:
-            current = self.palette_controller.get_current()
-            current_image = current.get('image')
-            current_global_palette_Lab = current.get('global_palette')
-            self.setPhoto(current_image)
-            self.__setGlobalPalettes(current_global_palette_Lab)
-            self.clear_plot()
-            color_samples_RGB = self.palette_controller.image_model.color_samples_RGB
-            self.plot(color_samples_RGB)
-        
+            input_image = self.right_image_model.load_image(input_path)
+            self.setPhoto(self.rightImageLabel, input_image)
+            # self.clear_plot(self.rightMatplotlibCanvas)
+            # self.plot(self.rightMatplotlibCanvas, color_samples_RGB)
+
     def handlePaletteLabelClicked(self, chosen_color_Lab, is_global, palette_index):
         if is_global:
             self.globalPalettes[palette_index].setColor(chosen_color_Lab, 
                                                         size=GLOBAL_COLOR_PALETTE_SIZE)
-            self.palette_controller.handleGlobalPaletteChanged(chosen_color_Lab, palette_index)
-            self.clear_plot()
-            color_samples_RGB = self.palette_controller.image_model.color_samples_RGB
-            self.plot(color_samples_RGB)
-            # update local palettes
-            self.clearLayout(self.localPalettesLayout)
-            image = self.palette_controller.get_image()
-            local_color_palettes = self.palette_controller.generate_local_palettes(image,
-                                                                                   self.overlap_size,
-                                                                                   self.window_size)
-            self.__setLocalColorPalettes(local_color_palettes)
+            self.left_palette_controller.handleGlobalPaletteChanged(chosen_color_Lab, palette_index)     
+            image = self.left_palette_controller.get_image()
+            self.setPhoto(self.leftImageLabel, image)
 
-
-    def handlePushButtonPressed(self):
-        button_sender = self.sender()
-        print(f"Button {button_sender.row_index} th clicked:")
-        palette_index = button_sender.row_index
-        local_palette_info = self.palette_controller.get_single_local_palette(palette_index)
-        window_position = local_palette_info.get('window_position')
-        self.palette_controller.draw_rectangle(window_position)
-        
-    def setPhoto(self, image):
-        print("SET NEW IMAGE")
-        self.imageLabel.setImage(limit_scale(image, self.imageLabelWidth, self.imageLabelHeight))
+            s_image = self.middle_palette_controller.get_image()
+            r_image = self.left_palette_controller.get_image()
+            reconstructed_image = self.reconstruct_image(r_image, s_image)
+            self.setPhoto(self.middleImageLabel, reconstructed_image)
 
     def __setGlobalPalettes(self, global_palette_Lab):
         for i in range(len(global_palette_Lab)):
             self.globalPalettes[i].setColor(global_palette_Lab[i], 
                                             size=GLOBAL_COLOR_PALETTE_SIZE)
-    
-    def __setLocalColorPalettes(self, local_color_palettes):
-        count_palette_index = 0
-        for i in range(len(local_color_palettes)):
-            count_palette_index += 1
-            hLayout = QtWidgets.QHBoxLayout()
-            pushButton = PushButton(i)
-            pushButton.setText('Show')
-            pushButton.setObjectName(f"Show Button {i} th")
-            pushButton.resize(30, 20)
-            pushButton.pressed.connect(self.handlePushButtonPressed)
-            hLayout.addWidget(pushButton)
-            for color in local_color_palettes[i]:
-                paletteLabel = PaletteLabel(self, is_global=False, palette_index=count_palette_index)
-                paletteLabel.setAlignment(Qt.AlignCenter)
-                paletteLabel.setColor(color, size=30)
-                self.localPalettes.append(paletteLabel)
-                hLayout.addWidget(paletteLabel)
-            self.localPalettesLayout.addLayout(hLayout)
+    def setPhoto(self, imageLabel, image):
+        print("SET NEW IMAGE")
+        imageLabel.setImage(limit_scale(image, self.imageLabelWidth, self.imageLabelHeight)) 
 
     def clearLayout(self, layout):
         if layout is not None:
@@ -377,15 +287,31 @@ class MainWindow(QMainWindow):
                 else:
                     self.clearLayout(item.layout())
 
-    def plot(self, color_samples_RGB):
+    def plot(self, canvas, color_samples_RGB):
         # color_samples_RGB = self.palette_controller.image_model.color_samples_RGB
-        self.matplotlibCanvas.axes.scatter(color_samples_RGB[:, 0], 
+        canvas.axes.scatter(color_samples_RGB[:, 0], 
                                            color_samples_RGB[:, 1], 
                                            color_samples_RGB[:, 2],
                                            c=np.reshape(color_samples_RGB, (-1, 3)))
-        self.matplotlibCanvas.draw()
+        canvas.draw()
 
-    def clear_plot(self):
+    def clear_plot(self, canvas):
         print('Clear Plot')
-        self.matplotlibCanvas.axes.cla()
-        self.matplotlibCanvas.draw()
+        canvas.axes.cla()
+        canvas.draw()
+
+    def reconstruct_image(self, r_image, s_image):
+        s_image = s_image.convert('L')
+        r_image = r_image.convert('RGB')
+
+        s_img_np = np.array(s_image)
+        r_img_np = np.array(r_image)
+
+        s_img_np = np.expand_dims(s_img_np, axis=2)
+        s_img_np = np.concatenate((s_img_np, s_img_np, s_img_np), axis=2)
+        s_img_nor = s_img_np / 255
+        s_img_nor = s_img_nor**(1/2.2)
+        r_img_nor = r_img_np/255
+        reconstructed_img = np.multiply(r_img_nor, s_img_nor)
+        reconstructed_img = (reconstructed_img*255).astype(np.uint8)
+        return Image.fromarray(reconstructed_img)

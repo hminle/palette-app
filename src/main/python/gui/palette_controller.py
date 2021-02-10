@@ -110,7 +110,7 @@ class PaletteController:
         target_palette = self.global_palette_model.get_current_palette()
         target_image_RGB = self.__transfer_image(source_palette, target_palette)
         self.image_model.update_image(target_image_RGB)
-        self.main_window.setPhoto(target_image_RGB)
+        # self.main_window.setPhoto(target_image_RGB)
 
     def __transfer_image(self, source_palette, target_palette):
         source_image = self.image_model.get_current_image()

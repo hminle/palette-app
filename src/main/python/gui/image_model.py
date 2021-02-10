@@ -18,6 +18,7 @@ class ImageModel:
         self.current_image = copy.deepcopy(self.original_image)
         self.original_color_samples_RGB = self.__get_simple_hist()
         self.color_samples_RGB = self.__get_simple_hist()
+        return self.original_image
 
     def get_current_image(self):
         return copy.deepcopy(self.current_image)

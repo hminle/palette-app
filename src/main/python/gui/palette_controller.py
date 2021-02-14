@@ -5,7 +5,7 @@ from PIL import Image, ImageQt, ImageDraw
 from gui.global_palette_model import GlobalPaletteModel
 from gui.local_palette_model import LocalPaletteModel
 from core.util import rgb2lab, lab2rgb
-from core.palette import build_palette
+from core.palette_ab import build_palette_ab
 from core.transfer import image_transfer
 from gui.image_model import ImageModel
 
@@ -59,7 +59,7 @@ class PaletteController:
     def generate_global_palettes(self):
         input_image = self.image_model.get_current_image()
         input_image_Lab = rgb2lab(input_image)
-        global_palette_Lab = build_palette(input_image_Lab)
+        global_palette_Lab = build_palette_ab(input_image_Lab)
         self.global_palette_model.set_palette(global_palette_Lab)
         return global_palette_Lab
 
@@ -96,7 +96,7 @@ class PaletteController:
                             sample_Lab = rgb2lab(sample_img)
 
                             #build palette
-                            sample_palette_Lab = build_palette(sample_Lab)
+                            sample_palette_Lab = build_palette_ab(sample_Lab)
                             local_color_palettes.append(sample_palette_Lab)
                             self.local_palette_model.add_local_palette(sample_palette_Lab, 
                                                                        (j, i, j+col_step_final, i+row_step_final))

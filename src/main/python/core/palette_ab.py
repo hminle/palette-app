@@ -83,10 +83,15 @@ def build_palette_ab(image, num_palettes=5, random_init=False, black=True, thres
 
     if threshold > 0:
         weights[weights > threshold] = threshold
-
-    kmeans = KMeans(n_clusters=num_palettes, 
-                    init=init_pixels).fit(colors[:,1:None], sample_weight=weights)
-    cluster_centters_L = add_L_channel(kmeans, colors)
+    if colors.shape[0] > num_palettes:
+        kmeans = KMeans(n_clusters=num_palettes, 
+                        init=init_pixels).fit(colors[:,1:None], sample_weight=weights)
+        cluster_centters_L = add_L_channel(kmeans, colors)
+    else:
+        print(colors.shape[0])
+        cluster_centters_L = np.zeros((num_palettes, 3))
+        mean_arr = np.mean(colors, axis=0)
+        cluster_centters_L[colors.shape[0]:None,:] = np.tile(mean_arr, (num_palettes - colors.shape[0], 1))
     palette = [tuple([int(x) for x in color]) for color in cluster_centters_L]
     return palette
                     

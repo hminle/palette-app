@@ -6,7 +6,7 @@ from gui.global_palette_model import GlobalPaletteModel
 from gui.local_palette_model import LocalPaletteModel
 from core.util import rgb2lab, lab2rgb
 from core.palette_ab import build_palette_ab
-from core.transfer import image_transfer
+from core.transfer_ab import image_transfer_ab
 from gui.image_model import ImageModel
 
 class PaletteController:
@@ -117,7 +117,7 @@ class PaletteController:
         print(f"SOURCE {source_palette}")
         print(f"TARGETT {target_palette}")
         source_image_Lab = rgb2lab(source_image)
-        target_image_Lab = image_transfer(source_image_Lab, 
+        target_image_Lab = image_transfer_ab(source_image_Lab, 
                                      source_palette, 
                                      target_palette, 
                                      sample_level=10, 

@@ -136,3 +136,7 @@ def limit_scale(image, width, height):
         return image.resize(scale_size)
     else:
         return image
+
+def ValidAB(AB):
+    a, b = AB
+    return -128 <= a <= 127 and -128 <= b <= 127
